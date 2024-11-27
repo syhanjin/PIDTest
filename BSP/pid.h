@@ -10,7 +10,7 @@
 #ifndef PID_H
 #define PID_H
 
-#define PID_VERSION "0.0.2"
+#define PID_VERSION "0.3.1"
 
 #include "main.h"
 
@@ -19,11 +19,19 @@
 typedef struct
 {
     uint8_t enable;
-    float Kp, Ki, Kd; ///< 比例系数 积分系数 微分系数
     float target; ///< PID控制要求输入值的目标
-    float dfilter; ///< 微分部分低通滤波系数，越大越平滑
-    float ufilter; ///< 输出值滤波
-
+    float cutoff; ///< 分界值
+    /* v3.0 将pid控制分段 */
+    // error < 5 时的参数
+    float KpE, KiE, KdE; ///< 比例系数 积分系数 微分系数
+    float dfilterE; ///< 微分部分低通滤波系数，越大越平滑
+    float ufilterE; ///< 输出值滤波
+    /* v3.1 增加死区大小，用于位置环稳定 */
+    float ideadzone; ///< 积分部分死区大小
+    // error >=5 时的参数
+    float KpS, KiS, KdS;
+    float ufilterS, dfilterS;
+    // 运行过程中间量
     float error_last1, error_last2, error; ///< 前一次误差 前前次误差 本次误差
     float output; ///< PID控制输出值
     float output_abs_max; ///< PID输出绝对值最大值，防止跑飞
@@ -38,8 +46,9 @@ typedef struct
 #define __PID_SET_TARGET(__PID_HANDLE__, __TARGET__) ((__PID_HANDLE__)->target = (__TARGET__))
 
 void PID_Init(PID_t* hpid,
-              const float Kp, const float Ki, const float Kd,
-              const float target, const float output_abs_max,
-              const float dfilter, const float ufilter);
-float PID_Calculate(PID_t* hpid, const float input);
+              float KpS, float KiS, float KdS, float ufilterS, float dfilterS,
+              float KpE, float KiE, float KdE, float ufilterE, float dfilterE, float ideadzone,
+              float output_abs_max, float cutoff, float target
+);
+float PID_Calculate(PID_t* hpid, const float feedback);
 #endif

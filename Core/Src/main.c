@@ -126,48 +126,36 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef* huart)
         delay_counter = 10;
         break;
       case 0x44: // 修改比例系数
-        PIDs->Kp = *(float*)(rb + 2)
+        PIDs->KpE = *(float*)(rb + 2)
 #ifdef SPEED_LOOP
           / MAX_SPEED
 #endif
           ;
         break;
       case 0x55: // 修改积分系数
-        PIDs->Ki = *(float*)(rb + 2)
+        PIDs->KiE = *(float*)(rb + 2)
 #ifdef SPEED_LOOP
           / MAX_SPEED
 #endif
           ;
         break;
       case 0x66: // 修改微分系数
-        PIDs->Kd = *(float*)(rb + 2)
+        PIDs->KdE = *(float*)(rb + 2)
 #ifdef SPEED_LOOP
           / MAX_SPEED
 #endif
           ;
         break;
       case 0x77: // 修改微分低通滤波系数
-        PIDs->dfilter = *(float*)(rb + 2);
+        PIDs->dfilterE = *(float*)(rb + 2);
         break;
       case 0x99: //
-        PIDs->ufilter = *(float*)(rb + 2);
+        PIDs->ufilterE = *(float*)(rb + 2);
         break;
       default: ;
       }
       printf("ACK: %f,%f,%f,%f,%f,%f\n",
-             PIDs->target, PIDs->Kp
-#ifdef SPEED_LOOP
-             * MAX_SPEED
-#endif
-             , PIDs->Ki
-#ifdef SPEED_LOOP
-             * MAX_SPEED
-#endif
-             , PIDs->Kd
-#ifdef SPEED_LOOP
-             * MAX_SPEED
-#endif
-             , PIDs->dfilter, PIDs->ufilter);
+             PIDs->target, PIDs->KpE, PIDs->KiE, PIDs->KdE, PIDs->dfilterE, PIDs->ufilterE);
     }
     UART_Start_Receive_IT(&huart1, rb, 7);
   }
@@ -209,19 +197,14 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  PID_Init(PIDs + 0, 3
-#ifdef SPEED_LOOP
-           / MAX_SPEED
-#endif
-           , 0.1
-#ifdef SPEED_LOOP
-           / MAX_SPEED
-#endif
-           , 1.0
-#ifdef SPEED_LOOP
-           / MAX_SPEED
-#endif
-           , 0, 1, 0.4, 0);
+  PID_Init(&PIDs[0],
+           1.72742, 0.14087, 0.35868, 0.57931, 0.51708,
+           2.47420, 0.02883, 0.22799, 0.60006, 0.60421, 0.02,
+           1, 2, 0
+  );
+  printf("PID: KpS: %f, KiS: %f, KdS: %f, ufilterS: %f, dfilterS: %f\n", PIDs[0].KpS, PIDs[0].KiS, PIDs[0].KdS, PIDs[0].ufilterS, PIDs[0].dfilterS);
+  printf("PID: KpE: %f, KiE: %f, KdE: %f, ufilterE: %f, dfilterE: %f\n", PIDs[0].KpE, PIDs[0].KiE, PIDs[0].KdE, PIDs[0].ufilterE, PIDs[0].dfilterE);
+  printf("PID: output_abs_max: %f, cutoff %f, target: %f\n", PIDs[0].output_abs_max, PIDs[0].cutoff, PIDs[0].target);
 
   UART_Start_Receive_IT(&huart1, rb, 7);
   HAL_TIM_Base_Start_IT(&htim1);
